@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#0f172a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="AutoPeças">
+  <title>AutoPeças</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', -apple-system, sans-serif; background: #0f172a; color: #f8fafc; min-height: 100vh; }
+    
+    .loading-screen { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: #0f172a; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; }
+    .loading-screen.hidden { display: none; }
+    .loading-logo { font-size: 80px; margin-bottom: 20px; }
+    .loading-text { color: #94a3b8; font-size: 16px; }
+    .loading-spinner { width: 40px; height: 40px; border: 3px solid #334155; border-top: 3px solid #f59e0b; border-radius: 50%; animation: spin 1s linear infinite; margin-top: 20px; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+    .notif-modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.9); display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 9998; }
+    .notif-modal.hidden { display: none; }
+    .notif-box { background: #1e293b; border-radius: 20px; padding: 30px; text-align: center; max-width: 350px; width: 100%; }
+    .notif-icon { font-size: 60px; display: block; margin-bottom: 15px; }
+    .notif-title { font-size: 22px; margin-bottom: 10px; }
+    .notif-text { color: #94a3b8; font-size: 14px; margin-bottom: 25px; }
+    .notif-buttons { display: flex; gap: 10px; }
+    .notif-btn-later { flex: 1; padding: 14px; background: #334155; color: #94a3b8; border: none; border-radius: 10px; font-size: 15px; cursor: pointer; }
+    .notif-btn-allow { flex: 1; padding: 14px; background: #f59e0b; color: #0f172a; border: none; border-radius: 10px; font-size: 15px; font-weight: 700; cursor: pointer; }
+
+    .login-screen { min-height: 100vh; background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); display: flex; align-items: center; justify-content: center; padding: 20px; }
+    .login-screen.hidden { display: none; }
+    .login-box { background: #1e293b; border-radius: 20px; padding: 40px 30px; width: 100%; max-width: 400px; box-shadow: 0 25px 50px rgba(0,0,0,0.5); border: 1px solid #334155; position: relative; }
+    .back-btn { position: absolute; top: 15px; left: 15px; background: transparent; border: none; color: #94a3b8; font-size: 16px; cursor: pointer; padding: 8px 12px; }
+    .back-btn.hidden { display: none; }
+    .logo-container { text-align: center; margin-bottom: 30px; }
+    .logo-icon { font-size: 60px; display: block; margin-bottom: 10px; }
+    .logo-text { font-size: 28px; font-weight: 700; }
+    .logo-subtext { color: #64748b; font-size: 14px; margin-top: 5px; }
+    .login-title { color: #94a3b8; font-size: 16px; text-align: center; margin-bottom: 20px; }
+    .user-grid { display: flex; flex-direction: column; gap: 10px; }
+    .user-btn { display: flex; align-items: center; gap: 15px; padding: 15px 20px; background: #0f172a; border: 2px solid #334155; border-radius: 12px; cursor: pointer; text-align: left; color: #f8fafc; }
+    .user-btn:hover { border-color: #f59e0b; }
+    .user-avatar { font-size: 28px; }
+    .user-name { flex: 1; font-size: 16px; font-weight: 600; }
+    .user-role { font-size: 12px; }
+    .user-role.admin { color: #f59e0b; }
+    .user-role.func { color: #64748b; }
+    .senha-container { display: flex; flex-direction: column; gap: 15px; }
+    .senha-container.hidden { display: none; }
+    .senha-wrapper { position: relative; }
+    .senha-input { width: 100%; padding: 16px 50px 16px 20px; background: #0f172a; border: 2px solid #334155; border-radius: 12px; color: #f8fafc; font-size: 16px; outline: none; }
+    .senha-input:focus { border-color: #f59e0b; }
+    .show-senha-btn { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); background: transparent; border: none; font-size: 20px; cursor: pointer; }
+    .erro-text { color: #ef4444; font-size: 14px; text-align: center; }
+    .erro-text.hidden { display: none; }
+    .login-btn { width: 100%; padding: 16px; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: #0f172a; border: none; border-radius: 12px; font-size: 16px; font-weight: 700; cursor: pointer; }
+    .login-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    .app-screen { display: none; }
+    .app-screen.active { display: block; }
+
+    .header { background: #1e293b; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; position: sticky; top: 0; z-index: 100; }
+    .header-left { display: flex; align-items: center; gap: 12px; }
+    .header-logo { font-size: 32px; }
+    .header-title { font-size: 18px; font-weight: 700; }
+    .connection-status { font-size: 11px; }
+    .connection-status.online { color: #22c55e; }
+    .connection-status.offline { color: #ef4444; }
+    .header-right { display: flex; align-items: center; gap: 15px; }
+    .user-info { color: #94a3b8; font-size: 14px; }
+    .logout-btn { background: #334155; color: #f8fafc; border: none; padding: 8px 15px; border-radius: 8px; font-size: 13px; cursor: pointer; }
+
+    .online-bar { display: flex; align-items: center; gap: 10px; padding: 10px 20px; background: #0f172a; border-bottom: 1px solid #334155; overflow-x: auto; }
+    .online-bar.hidden { display: none; }
+    .online-label { color: #64748b; font-size: 12px; white-space: nowrap; }
+    .online-user { background: rgba(34, 197, 94, 0.2); color: #22c55e; padding: 4px 10px; border-radius: 20px; font-size: 11px; white-space: nowrap; }
+
+    .filter-bar { display: flex; gap: 8px; padding: 15px 20px; overflow-x: auto; background: #1e293b; border-bottom: 1px solid #334155; }
+    .filter-btn { background: #0f172a; color: #94a3b8; border: 1px solid #334155; padding: 8px 16px; border-radius: 20px; font-size: 13px; cursor: pointer; white-space: nowrap; }
+    .filter-btn.active { background: #f59e0b; color: #0f172a; border-color: #f59e0b; font-weight: 600; }
+
+    .main { padding: 20px; padding-bottom: 100px; }
+    .empty-state { text-align: center; padding: 60px 20px; }
+    .empty-icon { font-size: 60px; display: block; margin-bottom: 15px; opacity: 0.5; }
+    .empty-text { font-size: 18px; margin-bottom: 5px; }
+    .empty-subtext { color: #64748b; font-size: 14px; }
+
+    .pecas-list { display: flex; flex-direction: column; gap: 12px; }
+    .peca-card { background: #1e293b; border-radius: 12px; padding: 15px; display: flex; gap: 15px; align-items: center; cursor: pointer; border: 1px solid #334155; }
+    .peca-foto { width: 60px; height: 60px; border-radius: 8px; object-fit: cover; background: #0f172a; }
+    .peca-icon-box { width: 60px; height: 60px; border-radius: 8px; background: #0f172a; display: flex; align-items: center; justify-content: center; font-size: 28px; }
+    .peca-info { flex: 1; min-width: 0; }
+    .peca-codigo { color: #f59e0b; font-size: 14px; font-weight: 700; font-family: monospace; }
+    .peca-nome { font-size: 15px; font-weight: 500; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .peca-meta { display: flex; gap: 15px; margin-top: 5px; color: #64748b; font-size: 12px; }
+    .peca-status { padding: 6px 12px; border-radius: 8px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+    .peca-data-est { color: #22c55e; font-size: 11px; margin-top: 4px; }
+    .status-pendente { background: #451a03; color: #f59e0b; }
+    .status-comprado { background: #052e16; color: #22c55e; }
+    .status-nao_possivel { background: #450a0a; color: #ef4444; }
+    .status-chegou { background: #172554; color: #3b82f6; }
+
+    .add-btn { position: fixed; bottom: 25px; left: 50%; transform: translateX(-50%); background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: #0f172a; border: none; padding: 16px 40px; border-radius: 50px; font-size: 16px; font-weight: 700; cursor: pointer; box-shadow: 0 10px 40px rgba(245, 158, 11, 0.4); z-index: 100; }
+
+    .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); display: flex; align-items: flex-end; justify-content: center; z-index: 1000; padding: 20px; }
+    .modal-overlay.hidden { display: none; }
+    .modal { background: #1e293b; border-radius: 20px 20px 0 0; width: 100%; max-width: 500px; max-height: 90vh; overflow: hidden; display: flex; flex-direction: column; }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; padding: 20px; border-bottom: 1px solid #334155; }
+    .modal-title { font-size: 18px; font-weight: 700; }
+    .close-btn { background: #334155; color: #f8fafc; border: none; width: 36px; height: 36px; border-radius: 50%; font-size: 18px; cursor: pointer; }
+    .modal-body { padding: 20px; overflow-y: auto; flex: 1; }
+    .modal-footer { padding: 15px 20px; display: flex; gap: 10px; border-top: 1px solid #334155; }
+
+    .input-group { margin-bottom: 20px; }
+    .label { display: block; color: #94a3b8; font-size: 13px; font-weight: 500; margin-bottom: 8px; }
+    .input { width: 100%; padding: 14px 16px; background: #0f172a; border: 2px solid #334155; border-radius: 10px; color: #f8fafc; font-size: 15px; outline: none; }
+    .input:focus { border-color: #f59e0b; }
+    .codigo-row { display: flex; gap: 10px; margin-bottom: 10px; }
+    .input-codigo { flex: 1; }
+    .scan-btn { padding: 14px 18px; background: #7c3aed; border: none; border-radius: 10px; font-size: 20px; cursor: pointer; }
+    .buscar-btn { width: 100%; padding: 14px 20px; background: #059669; color: #fff; border: none; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; }
+    .buscar-btn:disabled { opacity: 0.6; }
+    .erro-busca { color: #fbbf24; font-size: 13px; margin-top: 8px; }
+    .erro-busca.hidden { display: none; }
+    .textarea { width: 100%; padding: 14px 16px; background: #0f172a; border: 2px solid #334155; border-radius: 10px; color: #f8fafc; font-size: 15px; outline: none; resize: vertical; font-family: inherit; }
+    .foto-btn { width: 100%; padding: 14px; background: #0f172a; border: 2px dashed #334155; border-radius: 10px; color: #94a3b8; font-size: 15px; cursor: pointer; }
+    .foto-preview { width: 100%; max-height: 150px; object-fit: contain; border-radius: 10px; margin-top: 10px; }
+    .foto-preview.hidden { display: none; }
+
+    .info-encontrada { background: #052e16; border: 1px solid #22c55e; border-radius: 12px; padding: 15px; margin-bottom: 20px; }
+    .info-encontrada.hidden { display: none; }
+    .info-header { color: #22c55e; font-size: 14px; font-weight: 600; margin-bottom: 12px; }
+    .info-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .info-label { color: #86efac; font-size: 13px; }
+    .info-value { color: #f0fdf4; font-size: 14px; font-weight: 500; }
+    .info-preco { color: #4ade80; font-size: 16px; font-weight: 700; }
+    .veiculos-lista { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+    .veiculo-tag { background: #166534; color: #bbf7d0; padding: 4px 10px; border-radius: 20px; font-size: 11px; }
+    .ver-ml-link { display: block; margin-top: 12px; padding: 10px; background: #fef08a; color: #713f12; text-align: center; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 13px; }
+
+    .cancel-btn { flex: 1; padding: 14px; background: #334155; color: #f8fafc; border: none; border-radius: 10px; font-size: 15px; font-weight: 600; cursor: pointer; }
+    .submit-btn { flex: 2; padding: 14px; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: #0f172a; border: none; border-radius: 10px; font-size: 15px; font-weight: 700; cursor: pointer; }
+
+    .detail-foto { width: 100%; max-height: 150px; object-fit: contain; border-radius: 12px; background: #0f172a; margin-bottom: 20px; }
+    .detail-row { display: flex; justify-content: space-between; align-items: flex-start; padding: 12px 0; border-bottom: 1px solid #334155; }
+    .detail-label { color: #64748b; font-size: 13px; }
+    .detail-value { color: #f8fafc; font-size: 14px; font-weight: 500; text-align: right; max-width: 60%; }
+
+    .admin-actions { margin-top: 25px; padding: 20px; background: #0f172a; border-radius: 12px; }
+    .admin-title { color: #f59e0b; font-size: 14px; font-weight: 600; margin-bottom: 15px; }
+    .status-buttons { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; }
+    .status-btn { padding: 10px 15px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; border: none; }
+    .delete-btn { width: 100%; padding: 12px; background: #7f1d1d; color: #fca5a5; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; }
+    .func-info { margin-top: 20px; padding: 15px; background: #1e3a5f; border-radius: 10px; color: #93c5fd; font-size: 13px; text-align: center; }
+
+    .sub-modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.9); display: flex; align-items: center; justify-content: center; z-index: 2000; padding: 20px; }
+    .sub-modal-overlay.hidden { display: none; }
+    .sub-modal { background: #1e293b; border-radius: 16px; padding: 25px; width: 100%; max-width: 350px; }
+    .sub-modal-title { font-size: 18px; margin-bottom: 15px; text-align: center; }
+    .sub-modal-text { color: #94a3b8; font-size: 14px; margin-bottom: 10px; }
+    .sub-modal-buttons { display: flex; gap: 10px; margin-top: 20px; }
+
+    .scanner-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.95); display: flex; align-items: center; justify-content: center; z-index: 2000; padding: 20px; }
+    .scanner-overlay.hidden { display: none; }
+    .scanner-container { background: #1e293b; border-radius: 16px; width: 100%; max-width: 400px; overflow: hidden; }
+    .scanner-header { display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; border-bottom: 1px solid #334155; }
+    .scanner-title { font-size: 16px; font-weight: 600; }
+    .manual-input-section { padding: 15px 20px; }
+    .manual-input-label { color: #94a3b8; font-size: 13px; margin-bottom: 10px; }
+    .manual-input-row { display: flex; gap: 10px; }
+    .manual-input { flex: 1; padding: 12px 16px; background: #0f172a; border: 2px solid #334155; border-radius: 10px; color: #f8fafc; font-size: 15px; outline: none; }
+    .manual-input-btn { padding: 12px 20px; background: #f59e0b; color: #0f172a; border: none; border-radius: 10px; font-size: 15px; font-weight: 700; cursor: pointer; }
+
+    .install-banner { position: fixed; bottom: 90px; left: 20px; right: 20px; background: #1e293b; border: 1px solid #f59e0b; border-radius: 12px; padding: 15px; display: flex; align-items: center; gap: 15px; z-index: 99; }
+    .install-banner.hidden { display: none; }
+    .install-icon { font-size: 30px; }
+    .install-text { flex: 1; }
+    .install-title { font-size: 14px; font-weight: 600; }
+    .install-desc { font-size: 12px; color: #94a3b8; }
+    .install-btn { padding: 10px 15px; background: #f59e0b; color: #0f172a; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; }
+    .install-close { background: transparent; border: none; color: #64748b; font-size: 20px; cursor: pointer; }
+
+    .secure-badge { display: inline-flex; align-items: center; gap: 5px; background: #052e16; color: #22c55e; padding: 4px 10px; border-radius: 20px; font-size: 10px; margin-left: 10px; }
+  </style>
+</head>
+<body>
+  <div class="loading-screen" id="loadingScreen">
+    <div class="loading-logo">🔩</div>
+    <div class="loading-text">AutoPeças</div>
+    <div class="loading-spinner"></div>
+  </div>
+
+  <div class="notif-modal hidden" id="notifModal">
+    <div class="notif-box">
+      <span class="notif-icon">🔔</span>
+      <h2 class="notif-title">Ativar Notificações?</h2>
+      <p class="notif-text">Receba alertas quando alguém pedir uma peça ou quando o status mudar.</p>
+      <div class="notif-buttons">
+        <button class="notif-btn-later" onclick="closeNotifModal()">Depois</button>
+        <button class="notif-btn-allow" onclick="requestNotifPermission()">Permitir 🔔</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="login-screen" id="loginScreen">
+    <div class="login-box">
+      <button class="back-btn hidden" id="backBtn" onclick="showUserSelect()">← Voltar</button>
+      <div class="logo-container">
+        <span class="logo-icon" id="loginIcon">🔩</span>
+        <h1 class="logo-text" id="loginTitle">AutoPeças</h1>
+        <p class="logo-subtext" id="loginSubtext">Controle de Estoque</p>
+      </div>
+      <div id="userSelectDiv">
+        <h2 class="login-title">Quem é você?</h2>
+        <div class="user-grid" id="userGrid">
+          <p style="color:#64748b;text-align:center">Carregando usuários...</p>
+        </div>
+      </div>
+      <div id="passwordDiv" class="senha-container hidden">
+        <h2 class="login-title">Digite sua senha <span class="secure-badge">🔒 Seguro</span></h2>
+        <div class="senha-wrapper">
+          <input type="password" class="senha-input" id="senhaInput" placeholder="Senha" onkeypress="if(event.key==='Enter')doLogin()">
+          <button class="show-senha-btn" onclick="toggleSenha()">👁️</button>
+        </div>
+        <p class="erro-text hidden" id="erroText">Senha incorreta!</p>
+        <button class="login-btn" id="loginBtn" onclick="doLogin()">Entrar</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="app-screen" id="appScreen">
+    <header class="header">
+      <div class="header-left">
+        <span class="header-logo">🔩</span>
+        <div>
+          <h1 class="header-title">AutoPeças</h1>
+          <span class="connection-status offline" id="connectionStatus">● Conectando...</span>
+        </div>
+      </div>
+      <div class="header-right">
+        <span class="user-info" id="userInfoHeader"></span>
+        <button class="logout-btn" onclick="doLogout()">Sair</button>
+      </div>
+    </header>
+
+    <div class="online-bar hidden" id="onlineBar">
+      <span class="online-label">👥 Online:</span>
+      <div id="onlineUsers"></div>
+    </div>
+
+    <div class="filter-bar">
+      <button class="filter-btn active" data-filter="todos" onclick="setFilter('todos')">📋 Todos</button>
+      <button class="filter-btn" data-filter="pendente" onclick="setFilter('pendente')">🟡 Pendentes</button>
+      <button class="filter-btn" data-filter="comprado" onclick="setFilter('comprado')">🟢 Pedidos</button>
+      <button class="filter-btn" data-filter="nao_possivel" onclick="setFilter('nao_possivel')">🔴 Indisponível</button>
+      <button class="filter-btn" data-filter="chegou" onclick="setFilter('chegou')">✅ Chegaram</button>
+    </div>
+
+    <main class="main">
+      <div class="empty-state" id="emptyState">
+        <span class="empty-icon">📦</span>
+        <p class="empty-text">Nenhuma peça encontrada</p>
+        <p class="empty-subtext">Clique em "Pedir Peça" para adicionar</p>
+      </div>
+      <div class="pecas-list" id="pecasList"></div>
+    </main>
+
+    <button class="add-btn" onclick="openAddModal()">+ Pedir Peça</button>
+
+    <div class="install-banner hidden" id="installBanner">
+      <span class="install-icon">📲</span>
+      <div class="install-text">
+        <div class="install-title">Instalar AutoPeças</div>
+        <div class="install-desc">Adicione à tela inicial</div>
+      </div>
+      <button class="install-btn" onclick="installPWA()">Instalar</button>
+      <button class="install-close" onclick="closeInstallBanner()">✕</button>
+    </div>
+  </div>
+
+  <div class="modal-overlay hidden" id="addModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 class="modal-title">🔩 Pedir Peça</h2>
+        <button class="close-btn" onclick="closeAddModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="input-group">
+          <label class="label">Código da Peça *</label>
+          <div class="codigo-row">
+            <input type="text" class="input input-codigo" id="codigoInput" placeholder="Ex: PSL55" oninput="this.value=this.value.toUpperCase()">
+            <button class="scan-btn" onclick="openScanner()">📷</button>
+          </div>
+          <button class="buscar-btn" id="buscarBtn" onclick="buscarPeca()">🔍 Buscar Informações</button>
+          <p class="erro-busca hidden" id="erroBusca"></p>
+        </div>
+        <div class="info-encontrada hidden" id="infoEncontrada"></div>
+        <div class="input-group">
+          <label class="label">Nome / Descrição</label>
+          <input type="text" class="input" id="nomeInput" placeholder="Ex: Filtro de óleo">
+        </div>
+        <div class="input-group">
+          <label class="label">Quantidade</label>
+          <input type="text" class="input" id="quantidadeInput" placeholder="Ex: 2 unidades">
+        </div>
+        <div class="input-group">
+          <label class="label">Foto</label>
+          <input type="file" accept="image/*" capture="environment" id="fotoInput" style="display:none" onchange="handleFoto(this)">
+          <button class="foto-btn" onclick="document.getElementById('fotoInput').click()">📷 Tirar Foto</button>
+          <img class="foto-preview hidden" id="fotoPreview">
+        </div>
+        <div class="input-group">
+          <label class="label">Observação</label>
+          <textarea class="textarea" id="obsInput" rows="2" placeholder="Info extra..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="cancel-btn" onclick="closeAddModal()">Cancelar</button>
+        <button class="submit-btn" onclick="submitPeca()">✓ Pedir Peça</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay hidden" id="detailModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 class="modal-title">📋 Detalhes</h2>
+        <button class="close-btn" onclick="closeDetailModal()">✕</button>
+      </div>
+      <div class="modal-body" id="detailBody"></div>
+    </div>
+  </div>
+
+  <div class="scanner-overlay hidden" id="scannerModal">
+    <div class="scanner-container">
+      <div class="scanner-header">
+        <h3 class="scanner-title">📷 Digite o Código</h3>
+        <button class="close-btn" onclick="closeScanner()">✕</button>
+      </div>
+      <div class="manual-input-section">
+        <p class="manual-input-label">Código da peça:</p>
+        <div class="manual-input-row">
+          <input type="text" class="manual-input" id="scannerInput" placeholder="Ex: PSL55" oninput="this.value=this.value.toUpperCase()">
+          <button class="manual-input-btn" onclick="submitScanner()">OK</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sub-modal-overlay hidden" id="compradoModal">
+    <div class="sub-modal">
+      <h3 class="sub-modal-title">🟢 Pedido Feito</h3>
+      <p class="sub-modal-text">Data estimada de chegada (opcional):</p>
+      <input type="text" class="input" id="dataEstimadaInput" placeholder="Ex: 15/01/2026">
+      <div class="sub-modal-buttons">
+        <button class="cancel-btn" onclick="closeCompradoModal()">Cancelar</button>
+        <button class="submit-btn" onclick="confirmComprado()">Confirmar</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="sub-modal-overlay hidden" id="naoDisponivelModal">
+    <div class="sub-modal">
+      <h3 class="sub-modal-title">🔴 Não Disponível</h3>
+      <p class="sub-modal-text">Motivo:</p>
+      <select class="input" id="motivoSelect">
+        <option value="">Selecione...</option>
+        <option value="Não tem na distribuidora">Não tem na distribuidora</option>
+        <option value="Não consegui comprar">Não consegui comprar</option>
+        <option value="Preço muito alto">Preço muito alto</option>
+        <option value="Outro">Outro</option>
+      </select>
+      <div class="sub-modal-buttons">
+        <button class="cancel-btn" onclick="closeNaoDisponivelModal()">Cancelar</button>
+        <button class="submit-btn" onclick="confirmNaoDisponivel()">Confirmar</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ============================================
+    // CONFIGURAÇÃO - SEM SENHAS AQUI!
+    // ============================================
+    const SERVER_URL = 'https://pecas-server.onrender.com';
+    const WS_URL = 'wss://pecas-server.onrender.com';
+
+    const STATUS_CONFIG = {
+      pendente: { label: 'Pendente', icon: '🟡' },
+      comprado: { label: 'Pedido Feito', icon: '🟢' },
+      nao_possivel: { label: 'Não Disponível', icon: '🔴' },
+      chegou: { label: 'Chegou', icon: '✅' },
+    };
+
+    // ============================================
+    // ESTADO
+    // ============================================
+    let usuarios = []; // Carregado do servidor (sem senhas!)
+    let currentUser = null;
+    let selectedUserId = null;
+    let pecas = [];
+    let currentFilter = 'todos';
+    let ws = null;
+    let notificacoesAtivas = false;
+    let currentDetailPeca = null;
+    let currentInfoPeca = null;
+    let currentFoto = null;
+    let deferredPrompt = null;
+
+    // ============================================
+    // INICIALIZAÇÃO
+    // ============================================
+    window.onload = async function() {
+      // Carrega usuários do servidor (sem senhas!)
+      try {
+        const res = await fetch(`${SERVER_URL}/usuarios`);
+        usuarios = await res.json();
+        renderUsers();
+      } catch(e) {
+        document.getElementById('userGrid').innerHTML = '<p style="color:#ef4444;text-align:center">Erro ao conectar. Verifique sua conexão.</p>';
+      }
+
+      setTimeout(() => {
+        document.getElementById('loadingScreen').classList.add('hidden');
+        if ('Notification' in window && Notification.permission === 'default') {
+          document.getElementById('notifModal').classList.remove('hidden');
+        } else if (Notification.permission === 'granted') {
+          notificacoesAtivas = true;
+        }
+      }, 1000);
+
+      window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+      });
+    };
+
+    // ============================================
+    // NOTIFICAÇÕES
+    // ============================================
+    function closeNotifModal() { document.getElementById('notifModal').classList.add('hidden'); }
+    function requestNotifPermission() {
+      if ('Notification' in window) {
+        Notification.requestPermission().then(p => { notificacoesAtivas = p === 'granted'; closeNotifModal(); });
+      }
+    }
+    function showNotification(title, body) {
+      if (notificacoesAtivas) try { new Notification(title, { body, icon: '🔩' }); } catch(e) {}
+    }
+
+    // ============================================
+    // LOGIN SEGURO - SENHA VAI PRO SERVIDOR!
+    // ============================================
+    function renderUsers() {
+      const grid = document.getElementById('userGrid');
+      grid.innerHTML = usuarios.map(u => `
+        <button class="user-btn" onclick="selectUser(${u.id})">
+          <span class="user-avatar">${u.avatar}</span>
+          <span class="user-name">${u.name}</span>
+          <span class="user-role ${u.role === 'admin' ? 'admin' : 'func'}">${u.role === 'admin' ? 'Admin' : 'Funcionário'}</span>
+        </button>
+      `).join('');
+    }
+
+    function selectUser(id) {
+      selectedUserId = id;
+      const user = usuarios.find(u => u.id === id);
+      document.getElementById('userSelectDiv').classList.add('hidden');
+      document.getElementById('passwordDiv').classList.remove('hidden');
+      document.getElementById('backBtn').classList.remove('hidden');
+      document.getElementById('loginIcon').textContent = user.avatar;
+      document.getElementById('loginTitle').textContent = user.name;
+      document.getElementById('loginSubtext').textContent = '';
+      document.getElementById('senhaInput').focus();
+    }
+
+    function showUserSelect() {
+      selectedUserId = null;
+      document.getElementById('userSelectDiv').classList.remove('hidden');
+      document.getElementById('passwordDiv').classList.add('hidden');
+      document.getElementById('backBtn').classList.add('hidden');
+      document.getElementById('loginIcon').textContent = '🔩';
+      document.getElementById('loginTitle').textContent = 'AutoPeças';
+      document.getElementById('loginSubtext').textContent = 'Controle de Estoque';
+      document.getElementById('senhaInput').value = '';
+      document.getElementById('erroText').classList.add('hidden');
+    }
+
+    function toggleSenha() {
+      const input = document.getElementById('senhaInput');
+      const btn = event.target;
+      if (input.type === 'password') { input.type = 'text'; btn.textContent = '🙈'; }
+      else { input.type = 'password'; btn.textContent = '👁️'; }
+    }
+
+    // 🔒 LOGIN SEGURO - ENVIA PRO SERVIDOR VALIDAR!
+    async function doLogin() {
+      const senha = document.getElementById('senhaInput').value;
+      const btn = document.getElementById('loginBtn');
+      
+      btn.disabled = true;
+      btn.textContent = 'Verificando...';
+
+      try {
+        const res = await fetch(`${SERVER_URL}/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: selectedUserId, senha })
+        });
+
+        const data = await res.json();
+
+        if (data.sucesso) {
+          currentUser = data.user;
+          document.getElementById('loginScreen').classList.add('hidden');
+          document.getElementById('appScreen').classList.add('active');
+          document.getElementById('userInfoHeader').textContent = `${data.user.avatar} ${data.user.name}`;
+          
+          if (deferredPrompt && !window.matchMedia('(display-mode: standalone)').matches) {
+            setTimeout(() => document.getElementById('installBanner').classList.remove('hidden'), 3000);
+          }
+          
+          connectWebSocket();
+        } else {
+          document.getElementById('erroText').classList.remove('hidden');
+          document.getElementById('senhaInput').value = '';
+        }
+      } catch(e) {
+        document.getElementById('erroText').textContent = 'Erro de conexão';
+        document.getElementById('erroText').classList.remove('hidden');
+      }
+
+      btn.disabled = false;
+      btn.textContent = 'Entrar';
+    }
+
+    function doLogout() {
+      if (ws) ws.close();
+      currentUser = null;
+      pecas = [];
+      document.getElementById('appScreen').classList.remove('active');
+      document.getElementById('loginScreen').classList.remove('hidden');
+      showUserSelect();
+    }
+
+    // ============================================
+    // PWA
+    // ============================================
+    function installPWA() {
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then(() => { deferredPrompt = null; closeInstallBanner(); });
+      }
+    }
+    function closeInstallBanner() { document.getElementById('installBanner').classList.add('hidden'); }
+
+    // ============================================
+    // WEBSOCKET
+    // ============================================
+    function connectWebSocket() {
+      try {
+        ws = new WebSocket(WS_URL);
+        ws.onopen = () => {
+          document.getElementById('connectionStatus').textContent = '● Online' + (notificacoesAtivas ? ' 🔔' : '');
+          document.getElementById('connectionStatus').className = 'connection-status online';
+          ws.send(JSON.stringify({ type: 'join', user: currentUser }));
+        };
+        ws.onmessage = (event) => {
+          const data = JSON.parse(event.data);
+          switch(data.type) {
+            case 'sync': pecas = data.pecas || []; renderPecas(); renderOnlineUsers(data.onlineUsers || []); break;
+            case 'update': pecas = data.pecas || []; renderPecas(); if (data.notification) showNotification(data.notification.title, data.notification.body); break;
+            case 'userUpdate': renderOnlineUsers(data.onlineUsers || []); break;
+            case 'resultadoBusca': handleBuscaResult(data.info); break;
+          }
+        };
+        ws.onclose = () => {
+          document.getElementById('connectionStatus').textContent = '● Offline';
+          document.getElementById('connectionStatus').className = 'connection-status offline';
+          setTimeout(connectWebSocket, 3000);
+        };
+      } catch(e) { setTimeout(connectWebSocket, 3000); }
+    }
+
+    function sendMessage(type, payload = {}) {
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ type, ...payload, user: currentUser }));
+      }
+    }
+
+    // ============================================
+    // RENDER
+    // ============================================
+    function renderOnlineUsers(users) {
+      const bar = document.getElementById('onlineBar');
+      const container = document.getElementById('onlineUsers');
+      if (users.length > 0) {
+        bar.classList.remove('hidden');
+        container.innerHTML = users.map(u => `<span class="online-user">${u}</span>`).join('');
+      } else { bar.classList.add('hidden'); }
+    }
+
+    function renderPecas() {
+      const list = document.getElementById('pecasList');
+      const empty = document.getElementById('emptyState');
+      let filtered = pecas.filter(p => currentFilter === 'todos' ? p.status !== 'chegou' : p.status === currentFilter);
+      if (filtered.length === 0) {
+        list.innerHTML = '';
+        empty.classList.remove('hidden');
+      } else {
+        empty.classList.add('hidden');
+        list.innerHTML = filtered.map(p => `
+          <div class="peca-card" onclick="openDetailModal('${p.id}')">
+            ${p.foto ? `<img src="${p.foto}" class="peca-foto">` : '<div class="peca-icon-box">🔧</div>'}
+            <div class="peca-info">
+              <div class="peca-codigo">${p.codigo}</div>
+              <div class="peca-nome">${p.nome}</div>
+              <div class="peca-meta"><span>Por: ${p.pedidoPor}</span><span>${new Date(p.data).toLocaleDateString('pt-BR')}</span></div>
+              ${p.dataEstimada && p.status === 'comprado' ? `<div class="peca-data-est">📅 Previsão: ${p.dataEstimada}</div>` : ''}
+            </div>
+            <div class="peca-status status-${p.status}">${STATUS_CONFIG[p.status].icon} ${STATUS_CONFIG[p.status].label}</div>
+          </div>
+        `).join('');
+      }
+    }
+
+    function setFilter(filter) {
+      currentFilter = filter;
+      document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.filter === filter));
+      renderPecas();
+    }
+
+    // ============================================
+    // BUSCA ML
+    // ============================================
+    async function buscarNoMercadoLivre(codigo) {
+      try {
+        const url = `https://api.mercadolibre.com/sites/MLB/search?q=${encodeURIComponent(codigo)}&limit=20`;
+        const response = await fetch(url);
+        const data = await response.json();
+        if (!data.results || data.results.length === 0) return { naoEncontrado: true, mensagem: 'Nenhum produto encontrado' };
+        const codigoLimpo = codigo.toUpperCase().replace(/[\s\-]/g, '');
+        let resultados = data.results.filter(item => item.title.toUpperCase().replace(/[\s\-]/g, '').includes(codigoLimpo));
+        if (resultados.length === 0) resultados = data.results;
+        const primeiro = resultados[0];
+        let marca = '';
+        if (primeiro.attributes) primeiro.attributes.forEach(attr => { if (attr.id === 'BRAND') marca = attr.value_name || ''; });
+        return {
+          nome: primeiro.title,
+          tipo: detectarTipo(primeiro.title),
+          marca: marca,
+          aplicacao: extrairVeiculos(resultados.slice(0, 10)),
+          preco: primeiro.price ? `R$ ${primeiro.price.toFixed(2)}` : null,
+          link: primeiro.permalink,
+          imagem: primeiro.thumbnail
+        };
+      } catch(e) { return { naoEncontrado: true, mensagem: 'Erro na busca' }; }
+    }
+
+    function detectarTipo(titulo) {
+      const t = titulo.toLowerCase();
+      if (t.includes('filtro') && (t.includes('óleo') || t.includes('oleo'))) return 'Filtro de Óleo';
+      if (t.includes('filtro') && t.includes('ar') && !t.includes('cabine')) return 'Filtro de Ar';
+      if (t.includes('filtro') && t.includes('combust')) return 'Filtro de Combustível';
+      if (t.includes('filtro') && t.includes('cabine')) return 'Filtro de Cabine';
+      if (t.includes('pastilha')) return 'Pastilha de Freio';
+      if (t.includes('vela')) return 'Vela de Ignição';
+      if (t.includes('correia')) return 'Correia';
+      return 'Peça Automotiva';
+    }
+
+    function extrairVeiculos(resultados) {
+      const veiculos = new Set();
+      const carros = ['Gol','Fox','Voyage','Saveiro','Polo','Golf','Palio','Uno','Siena','Strada','Argo','Cronos','Mobi','Toro','Onix','Prisma','Cobalt','Spin','Cruze','Tracker','S10','Corsa','Celta','Civic','Fit','City','HR-V','Corolla','Etios','Hilux','HB20','Creta','Sandero','Logan','Duster','Ka','Fiesta','EcoSport','March','Versa','Kicks','Renegade','Compass'];
+      resultados.forEach(item => {
+        const tit = item.title.toLowerCase();
+        carros.forEach(c => { if (tit.includes(c.toLowerCase())) veiculos.add(c); });
+      });
+      return [...veiculos].slice(0, 15);
+    }
+
+    // ============================================
+    // MODAIS
+    // ============================================
+    function openAddModal() {
+      document.getElementById('addModal').classList.remove('hidden');
+      document.getElementById('codigoInput').value = '';
+      document.getElementById('nomeInput').value = '';
+      document.getElementById('quantidadeInput').value = '';
+      document.getElementById('obsInput').value = '';
+      document.getElementById('fotoPreview').classList.add('hidden');
+      document.getElementById('infoEncontrada').classList.add('hidden');
+      document.getElementById('erroBusca').classList.add('hidden');
+      currentInfoPeca = null; currentFoto = null;
+    }
+    function closeAddModal() { document.getElementById('addModal').classList.add('hidden'); }
+
+    async function buscarPeca() {
+      const codigo = document.getElementById('codigoInput').value.trim();
+      if (!codigo) return;
+      const btn = document.getElementById('buscarBtn');
+      btn.disabled = true; btn.textContent = '⏳ Buscando...';
+      document.getElementById('erroBusca').classList.add('hidden');
+      document.getElementById('infoEncontrada').classList.add('hidden');
+      const info = await buscarNoMercadoLivre(codigo);
+      btn.disabled = false; btn.textContent = '🔍 Buscar Informações';
+      if (info.naoEncontrado) {
+        document.getElementById('erroBusca').textContent = info.mensagem;
+        document.getElementById('erroBusca').classList.remove('hidden');
+      } else {
+        currentInfoPeca = info;
+        renderInfoEncontrada(info);
+        if (info.nome && !document.getElementById('nomeInput').value) document.getElementById('nomeInput').value = info.nome;
+      }
+    }
+
+    function renderInfoEncontrada(info) {
+      const div = document.getElementById('infoEncontrada');
+      div.innerHTML = `
+        <div class="info-header">✅ Encontrado!</div>
+        ${info.tipo ? `<div class="info-row"><span class="info-label">Tipo:</span><span class="info-value">${info.tipo}</span></div>` : ''}
+        ${info.marca ? `<div class="info-row"><span class="info-label">Marca:</span><span class="info-value">${info.marca}</span></div>` : ''}
+        ${info.preco ? `<div class="info-row"><span class="info-label">Preço:</span><span class="info-preco">${info.preco}</span></div>` : ''}
+        ${info.aplicacao && info.aplicacao.length > 0 ? `<div><span class="info-label">🚗 Veículos:</span><div class="veiculos-lista">${info.aplicacao.map(v => `<span class="veiculo-tag">${v}</span>`).join('')}</div></div>` : ''}
+        ${info.link ? `<a href="${info.link}" target="_blank" class="ver-ml-link">🛒 Ver no Mercado Livre</a>` : ''}
+      `;
+      div.classList.remove('hidden');
+    }
+
+    function handleFoto(input) {
+      const file = input.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onloadend = () => { currentFoto = reader.result; document.getElementById('fotoPreview').src = currentFoto; document.getElementById('fotoPreview').classList.remove('hidden'); };
+        reader.readAsDataURL(file);
+      }
+    }
+
+    function submitPeca() {
+      const codigo = document.getElementById('codigoInput').value.trim();
+      if (!codigo) { alert('Informe o código!'); return; }
+      sendMessage('addPeca', { peca: {
+        codigo: codigo.toUpperCase(),
+        nome: document.getElementById('nomeInput').value.trim() || 'Peça sem nome',
+        quantidade: document.getElementById('quantidadeInput').value.trim(),
+        observacao: document.getElementById('obsInput').value.trim(),
+        foto: currentFoto,
+        infoPeca: currentInfoPeca,
+        status: 'pendente',
+        pedidoPor: currentUser.name
+      }});
+      closeAddModal();
+    }
+
+    function openScanner() { document.getElementById('scannerModal').classList.remove('hidden'); document.getElementById('scannerInput').value = ''; document.getElementById('scannerInput').focus(); }
+    function closeScanner() { document.getElementById('scannerModal').classList.add('hidden'); }
+    function submitScanner() { const c = document.getElementById('scannerInput').value.trim(); if (c) { document.getElementById('codigoInput').value = c.toUpperCase(); closeScanner(); buscarPeca(); } }
+
+    function openDetailModal(id) {
+      const peca = pecas.find(p => p.id === id);
+      if (!peca) return;
+      currentDetailPeca = peca;
+      const isAdmin = currentUser.role === 'admin';
+      let html = peca.foto ? `<img src="${peca.foto}" class="detail-foto">` : '';
+      html += `
+        <div class="detail-row"><span class="detail-label">Código:</span><span class="detail-value">${peca.codigo}</span></div>
+        <div class="detail-row"><span class="detail-label">Nome:</span><span class="detail-value">${peca.nome}</span></div>
+        ${peca.quantidade ? `<div class="detail-row"><span class="detail-label">Qtd:</span><span class="detail-value">${peca.quantidade}</span></div>` : ''}
+        <div class="detail-row"><span class="detail-label">Status:</span><span class="peca-status status-${peca.status}">${STATUS_CONFIG[peca.status].icon} ${STATUS_CONFIG[peca.status].label}</span></div>
+        ${peca.dataEstimada && peca.status === 'comprado' ? `<div class="detail-row"><span class="detail-label">📅 Previsão:</span><span class="detail-value">${peca.dataEstimada}</span></div>` : ''}
+        ${peca.motivo && peca.status === 'nao_possivel' ? `<div class="detail-row"><span class="detail-label">❌ Motivo:</span><span class="detail-value">${peca.motivo}</span></div>` : ''}
+        <div class="detail-row"><span class="detail-label">Pedido por:</span><span class="detail-value">${peca.pedidoPor}</span></div>
+        <div class="detail-row"><span class="detail-label">Data:</span><span class="detail-value">${new Date(peca.data).toLocaleString('pt-BR')}</span></div>
+      `;
+      if (peca.infoPeca?.aplicacao?.length > 0) {
+        html += `<div class="info-encontrada" style="margin-top:15px"><div class="info-header">🚗 Veículos:</div><div class="veiculos-lista">${peca.infoPeca.aplicacao.map(v => `<span class="veiculo-tag">${v}</span>`).join('')}</div></div>`;
+      }
+      if (isAdmin) {
+        html += `<div class="admin-actions"><p class="admin-title">⚡ Ações:</p><div class="status-buttons">
+          ${peca.status !== 'pendente' ? `<button class="status-btn status-pendente" onclick="updateStatus('pendente')">🟡 Pendente</button>` : ''}
+          ${peca.status !== 'comprado' ? `<button class="status-btn status-comprado" onclick="openCompradoModal()">🟢 Pedido Feito</button>` : ''}
+          ${peca.status !== 'nao_possivel' ? `<button class="status-btn status-nao_possivel" onclick="openNaoDisponivelModal()">🔴 Não Disponível</button>` : ''}
+          ${peca.status !== 'chegou' ? `<button class="status-btn status-chegou" onclick="updateStatus('chegou')">✅ Chegou</button>` : ''}
+        </div><button class="delete-btn" onclick="deletePeca()">🗑️ Excluir</button></div>`;
+      } else {
+        html += `<div class="func-info">ℹ️ Apenas administradores podem alterar o status.</div>`;
+      }
+      document.getElementById('detailBody').innerHTML = html;
+      document.getElementById('detailModal').classList.remove('hidden');
+    }
+
+    function closeDetailModal() { document.getElementById('detailModal').classList.add('hidden'); currentDetailPeca = null; }
+    function updateStatus(status, extras = {}) { if (currentDetailPeca) { sendMessage('updateStatus', { pecaId: currentDetailPeca.id, status, ...extras }); closeDetailModal(); } }
+    function deletePeca() { if (currentDetailPeca && confirm('Excluir peça?')) { sendMessage('deletePeca', { pecaId: currentDetailPeca.id }); closeDetailModal(); } }
+
+    function openCompradoModal() { document.getElementById('compradoModal').classList.remove('hidden'); document.getElementById('dataEstimadaInput').value = ''; }
+    function closeCompradoModal() { document.getElementById('compradoModal').classList.add('hidden'); }
+    function confirmComprado() { updateStatus('comprado', { dataEstimada: document.getElementById('dataEstimadaInput').value.trim() }); closeCompradoModal(); }
+
+    function openNaoDisponivelModal() { document.getElementById('naoDisponivelModal').classList.remove('hidden'); document.getElementById('motivoSelect').value = ''; }
+    function closeNaoDisponivelModal() { document.getElementById('naoDisponivelModal').classList.add('hidden'); }
+    function confirmNaoDisponivel() { updateStatus('nao_possivel', { motivo: document.getElementById('motivoSelect').value }); closeNaoDisponivelModal(); }
+
+    if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+  </script>
+</body>
+</html>
