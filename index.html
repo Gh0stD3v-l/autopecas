@@ -290,15 +290,31 @@
     let currentDetailPeca = null;
     let currentInfoPeca = null;
 
+    // ============================================
+    // INICIALIZAÇÃO - VERIFICA LOGIN SALVO
+    // ============================================
     window.onload = async function() {
-      try {
-        const res = await fetch(`${SERVER_URL}/usuarios`);
-        usuarios = await res.json();
-        renderUsers();
-      } catch(e) {
-        document.getElementById('userGrid').innerHTML = '<p style="color:#ef4444">Erro ao conectar</p>';
+      // Verifica se tem usuário salvo no localStorage
+      const savedUser = localStorage.getItem('autopecas_user');
+      
+      if (savedUser) {
+        // Usuário já logado, vai direto pro app
+        currentUser = JSON.parse(savedUser);
+        document.getElementById('loadingScreen').classList.add('hidden');
+        document.getElementById('loginScreen').classList.add('hidden');
+        document.getElementById('appScreen').classList.add('active');
+        connectWebSocket();
+      } else {
+        // Precisa fazer login
+        try {
+          const res = await fetch(`${SERVER_URL}/usuarios`);
+          usuarios = await res.json();
+          renderUsers();
+        } catch(e) {
+          document.getElementById('userGrid').innerHTML = '<p style="color:#ef4444">Erro ao conectar</p>';
+        }
+        setTimeout(() => document.getElementById('loadingScreen').classList.add('hidden'), 1000);
       }
-      setTimeout(() => document.getElementById('loadingScreen').classList.add('hidden'), 1000);
     };
 
     function renderUsers() {
@@ -349,6 +365,10 @@
         const data = await res.json();
         if (data.sucesso) {
           currentUser = data.user;
+          
+          // SALVA O USUÁRIO NO LOCALSTORAGE
+          localStorage.setItem('autopecas_user', JSON.stringify(currentUser));
+          
           document.getElementById('loginScreen').classList.add('hidden');
           document.getElementById('appScreen').classList.add('active');
           connectWebSocket();
@@ -365,10 +385,21 @@
 
     function doLogout() {
       if (ws) ws.close();
+      
+      // REMOVE O USUÁRIO DO LOCALSTORAGE
+      localStorage.removeItem('autopecas_user');
+      
       currentUser = null;
       pecas = [];
       document.getElementById('appScreen').classList.remove('active');
       document.getElementById('loginScreen').classList.remove('hidden');
+      
+      // Recarrega usuários
+      fetch(`${SERVER_URL}/usuarios`)
+        .then(res => res.json())
+        .then(data => { usuarios = data; renderUsers(); })
+        .catch(() => {});
+      
       showUserSelect();
     }
 
@@ -450,7 +481,6 @@
 
     function closeAddModal() { document.getElementById('addModal').classList.add('hidden'); }
 
-    // BUSCA PELO SERVIDOR!
     async function buscarPeca() {
       const codigo = document.getElementById('codigoInput').value.trim();
       if (!codigo) return;
@@ -465,7 +495,7 @@
         const info = await res.json();
 
         if (info.naoEncontrado) {
-          document.getElementById('erroBusca').textContent = info.mensagem || 'Não encontrado';
+          document.getElementById('erroBusca').textContent = info.mensagem || 'Não encontrado - preencha manualmente';
           document.getElementById('erroBusca').style.display = 'block';
         } else {
           currentInfoPeca = info;
@@ -475,7 +505,7 @@
           }
         }
       } catch(e) {
-        document.getElementById('erroBusca').textContent = 'Erro na busca';
+        document.getElementById('erroBusca').textContent = 'Erro na busca - preencha manualmente';
         document.getElementById('erroBusca').style.display = 'block';
       }
 
@@ -485,10 +515,9 @@
     function renderInfoEncontrada(info) {
       const div = document.getElementById('infoEncontrada');
       div.innerHTML = `
-        <div class="info-header">✅ Encontrado! (${info.fonte || 'servidor'})</div>
+        <div class="info-header">✅ Encontrado!</div>
         ${info.tipo ? `<div class="info-row"><span class="info-label">Tipo:</span><span class="info-value">${info.tipo}</span></div>` : ''}
         ${info.marca ? `<div class="info-row"><span class="info-label">Marca:</span><span class="info-value">${info.marca}</span></div>` : ''}
-        ${info.preco ? `<div class="info-row"><span class="info-label">Preço:</span><span class="info-value" style="color:#4ade80">${info.preco}</span></div>` : ''}
         ${info.aplicacao && info.aplicacao.length > 0 ? `<div><span class="info-label">🚗 Veículos:</span><div class="veiculos-lista">${info.aplicacao.map(v => `<span class="veiculo-tag">${v}</span>`).join('')}</div></div>` : ''}
         ${info.link ? `<a href="${info.link}" target="_blank" class="ver-ml-link">🛒 Ver no Mercado Livre</a>` : ''}
       `;
