@@ -52,6 +52,8 @@
     .connection-status { font-size: 11px; }
     .connection-status.online { color: #22c55e; }
     .connection-status.offline { color: #ef4444; }
+    .header-right { display: flex; align-items: center; gap: 10px; }
+    .catalogo-btn { background: #7c3aed; color: #fff; border: none; padding: 8px 12px; border-radius: 8px; font-size: 12px; cursor: pointer; }
     .logout-btn { background: #334155; color: #f8fafc; border: none; padding: 8px 15px; border-radius: 8px; font-size: 13px; cursor: pointer; }
 
     .online-bar { display: flex; align-items: center; gap: 10px; padding: 10px 20px; background: #0f172a; border-bottom: 1px solid #334155; overflow-x: auto; }
@@ -86,7 +88,9 @@
 
     .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); display: flex; align-items: flex-end; justify-content: center; z-index: 1000; padding: 20px; }
     .modal-overlay.hidden { display: none; }
+    .modal-overlay.center { align-items: center; }
     .modal { background: #1e293b; border-radius: 20px 20px 0 0; width: 100%; max-width: 500px; max-height: 90vh; overflow: hidden; display: flex; flex-direction: column; }
+    .modal.rounded { border-radius: 20px; }
     .modal-header { display: flex; justify-content: space-between; align-items: center; padding: 20px; border-bottom: 1px solid #334155; }
     .modal-title { font-size: 18px; font-weight: 700; }
     .close-btn { background: #334155; color: #f8fafc; border: none; width: 36px; height: 36px; border-radius: 50%; font-size: 18px; cursor: pointer; }
@@ -99,7 +103,10 @@
     .input:focus { border-color: #f59e0b; }
     .buscar-btn { width: 100%; padding: 14px; background: #059669; color: #fff; border: none; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; margin-top: 10px; }
     .buscar-btn:disabled { opacity: 0.6; }
-    .erro-busca { color: #fbbf24; font-size: 13px; margin-top: 8px; display: none; }
+    .resultado-busca { margin-top: 15px; padding: 15px; border-radius: 10px; font-size: 13px; }
+    .resultado-busca.encontrado { background: #052e16; border: 1px solid #22c55e; color: #86efac; }
+    .resultado-busca.nao-encontrado { background: #451a03; border: 1px solid #f59e0b; color: #fcd34d; }
+    .resultado-busca.hidden { display: none; }
     .textarea { width: 100%; padding: 14px; background: #0f172a; border: 2px solid #334155; border-radius: 10px; color: #f8fafc; font-size: 15px; outline: none; resize: vertical; font-family: inherit; }
 
     .info-encontrada { background: #052e16; border: 1px solid #22c55e; border-radius: 12px; padding: 15px; margin-bottom: 20px; display: none; }
@@ -109,10 +116,10 @@
     .info-value { color: #f0fdf4; font-size: 14px; font-weight: 500; }
     .veiculos-lista { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
     .veiculo-tag { background: #166534; color: #bbf7d0; padding: 4px 10px; border-radius: 20px; font-size: 11px; }
-    .ver-ml-link { display: block; margin-top: 12px; padding: 10px; background: #fef08a; color: #713f12; text-align: center; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 13px; }
 
     .cancel-btn { flex: 1; padding: 14px; background: #334155; color: #f8fafc; border: none; border-radius: 10px; font-size: 15px; cursor: pointer; }
     .submit-btn { flex: 2; padding: 14px; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: #0f172a; border: none; border-radius: 10px; font-size: 15px; font-weight: 700; cursor: pointer; }
+    .submit-btn.purple { background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%); color: #fff; }
 
     .detail-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #334155; }
     .detail-label { color: #64748b; font-size: 13px; }
@@ -130,6 +137,14 @@
     .sub-modal { background: #1e293b; border-radius: 16px; padding: 25px; width: 100%; max-width: 350px; }
     .sub-modal-title { font-size: 18px; margin-bottom: 15px; text-align: center; }
     .sub-modal-buttons { display: flex; gap: 10px; margin-top: 20px; }
+
+    .catalogo-stats { background: #0f172a; padding: 15px; border-radius: 10px; margin-bottom: 20px; text-align: center; }
+    .catalogo-stats-number { font-size: 32px; font-weight: 700; color: #f59e0b; }
+    .catalogo-stats-label { color: #64748b; font-size: 13px; }
+
+    .tipos-lista { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 15px; }
+    .tipo-option { padding: 8px 14px; background: #0f172a; border: 2px solid #334155; border-radius: 8px; font-size: 13px; cursor: pointer; color: #94a3b8; }
+    .tipo-option.selected { border-color: #f59e0b; background: #451a03; color: #f59e0b; }
   </style>
 </head>
 <body>
@@ -168,7 +183,10 @@
           <span class="connection-status offline" id="connectionStatus">● Conectando...</span>
         </div>
       </div>
-      <button class="logout-btn" onclick="doLogout()">Sair</button>
+      <div class="header-right">
+        <button class="catalogo-btn" id="catalogoBtn" onclick="openCatalogoModal()" style="display:none">📚 Catálogo</button>
+        <button class="logout-btn" onclick="doLogout()">Sair</button>
+      </div>
     </header>
 
     <div class="online-bar hidden" id="onlineBar">
@@ -196,6 +214,7 @@
     <button class="add-btn" onclick="openAddModal()">+ Pedir Peça</button>
   </div>
 
+  <!-- Modal Pedir Peça -->
   <div class="modal-overlay hidden" id="addModal">
     <div class="modal">
       <div class="modal-header">
@@ -206,8 +225,8 @@
         <div class="input-group">
           <label class="label">Código da Peça *</label>
           <input type="text" class="input" id="codigoInput" placeholder="Ex: PSL55" oninput="this.value=this.value.toUpperCase()">
-          <button class="buscar-btn" id="buscarBtn" onclick="buscarPeca()">🔍 Buscar Informações</button>
-          <p class="erro-busca" id="erroBusca"></p>
+          <button class="buscar-btn" id="buscarBtn" onclick="buscarPeca()">🔍 Buscar no Catálogo</button>
+          <div class="resultado-busca hidden" id="resultadoBusca"></div>
         </div>
         <div class="info-encontrada" id="infoEncontrada"></div>
         <div class="input-group">
@@ -230,6 +249,7 @@
     </div>
   </div>
 
+  <!-- Modal Detalhes -->
   <div class="modal-overlay hidden" id="detailModal">
     <div class="modal">
       <div class="modal-header">
@@ -240,6 +260,61 @@
     </div>
   </div>
 
+  <!-- Modal Catálogo (só admin) -->
+  <div class="modal-overlay hidden center" id="catalogoModal">
+    <div class="modal rounded">
+      <div class="modal-header">
+        <h2 class="modal-title">📚 Cadastrar Peça no Catálogo</h2>
+        <button class="close-btn" onclick="closeCatalogoModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="catalogo-stats">
+          <div class="catalogo-stats-number" id="catalogoTotal">0</div>
+          <div class="catalogo-stats-label">peças no catálogo</div>
+        </div>
+        
+        <div class="input-group">
+          <label class="label">Código da Peça *</label>
+          <input type="text" class="input" id="catCodigoInput" placeholder="Ex: PSL55" oninput="this.value=this.value.toUpperCase()">
+        </div>
+        
+        <div class="input-group">
+          <label class="label">Tipo *</label>
+          <div class="tipos-lista" id="tiposLista">
+            <div class="tipo-option" onclick="selectTipo(this, 'Filtro de Óleo')">Filtro de Óleo</div>
+            <div class="tipo-option" onclick="selectTipo(this, 'Filtro de Ar')">Filtro de Ar</div>
+            <div class="tipo-option" onclick="selectTipo(this, 'Filtro de Cabine')">Filtro de Cabine</div>
+            <div class="tipo-option" onclick="selectTipo(this, 'Filtro de Combustível')">Filtro Combustível</div>
+            <div class="tipo-option" onclick="selectTipo(this, 'Vela de Ignição')">Vela de Ignição</div>
+            <div class="tipo-option" onclick="selectTipo(this, 'Cabo de Vela')">Cabo de Vela</div>
+            <div class="tipo-option" onclick="selectTipo(this, 'Pastilha de Freio')">Pastilha de Freio</div>
+            <div class="tipo-option" onclick="selectTipo(this, 'Correia Dentada')">Correia Dentada</div>
+            <div class="tipo-option" onclick="selectTipo(this, 'Tensor de Correia')">Tensor</div>
+            <div class="tipo-option" onclick="selectTipo(this, 'Amortecedor')">Amortecedor</div>
+          </div>
+          <input type="text" class="input" id="catTipoInput" placeholder="Ou digite um tipo personalizado" style="margin-top:10px">
+        </div>
+        
+        <div class="input-group">
+          <label class="label">Marca *</label>
+          <input type="text" class="input" id="catMarcaInput" placeholder="Ex: Tecfil, NGK, Bosch...">
+        </div>
+        
+        <div class="input-group">
+          <label class="label">Veículos Compatíveis (separe por vírgula)</label>
+          <textarea class="textarea" id="catVeiculosInput" rows="2" placeholder="Ex: GM Corsa, GM Celta, VW Gol G5"></textarea>
+        </div>
+        
+        <div class="resultado-busca hidden" id="catalogoResultado"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="cancel-btn" onclick="closeCatalogoModal()">Cancelar</button>
+        <button class="submit-btn purple" onclick="cadastrarPeca()">📚 Cadastrar no Catálogo</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sub-modais -->
   <div class="sub-modal-overlay hidden" id="compradoModal">
     <div class="sub-modal">
       <h3 class="sub-modal-title">🟢 Pedido Feito</h3>
@@ -289,23 +364,28 @@
     let ws = null;
     let currentDetailPeca = null;
     let currentInfoPeca = null;
+    let selectedTipo = '';
 
     // ============================================
-    // INICIALIZAÇÃO - VERIFICA LOGIN SALVO
+    // INICIALIZAÇÃO
     // ============================================
     window.onload = async function() {
-      // Verifica se tem usuário salvo no localStorage
       const savedUser = localStorage.getItem('autopecas_user');
       
       if (savedUser) {
-        // Usuário já logado, vai direto pro app
         currentUser = JSON.parse(savedUser);
         document.getElementById('loadingScreen').classList.add('hidden');
         document.getElementById('loginScreen').classList.add('hidden');
         document.getElementById('appScreen').classList.add('active');
+        
+        // Mostra botão catálogo só pra admin
+        if (currentUser.role === 'admin') {
+          document.getElementById('catalogoBtn').style.display = 'block';
+        }
+        
         connectWebSocket();
+        loadCatalogoStats();
       } else {
-        // Precisa fazer login
         try {
           const res = await fetch(`${SERVER_URL}/usuarios`);
           usuarios = await res.json();
@@ -316,6 +396,14 @@
         setTimeout(() => document.getElementById('loadingScreen').classList.add('hidden'), 1000);
       }
     };
+
+    async function loadCatalogoStats() {
+      try {
+        const res = await fetch(`${SERVER_URL}/catalogo`);
+        const data = await res.json();
+        document.getElementById('catalogoTotal').textContent = data.total;
+      } catch(e) {}
+    }
 
     function renderUsers() {
       document.getElementById('userGrid').innerHTML = usuarios.map(u => `
@@ -365,13 +453,16 @@
         const data = await res.json();
         if (data.sucesso) {
           currentUser = data.user;
-          
-          // SALVA O USUÁRIO NO LOCALSTORAGE
           localStorage.setItem('autopecas_user', JSON.stringify(currentUser));
-          
           document.getElementById('loginScreen').classList.add('hidden');
           document.getElementById('appScreen').classList.add('active');
+          
+          if (currentUser.role === 'admin') {
+            document.getElementById('catalogoBtn').style.display = 'block';
+          }
+          
           connectWebSocket();
+          loadCatalogoStats();
         } else {
           document.getElementById('erroText').style.display = 'block';
           document.getElementById('senhaInput').value = '';
@@ -385,16 +476,13 @@
 
     function doLogout() {
       if (ws) ws.close();
-      
-      // REMOVE O USUÁRIO DO LOCALSTORAGE
       localStorage.removeItem('autopecas_user');
-      
       currentUser = null;
       pecas = [];
       document.getElementById('appScreen').classList.remove('active');
       document.getElementById('loginScreen').classList.remove('hidden');
+      document.getElementById('catalogoBtn').style.display = 'none';
       
-      // Recarrega usuários
       fetch(`${SERVER_URL}/usuarios`)
         .then(res => res.json())
         .then(data => { usuarios = data; renderUsers(); })
@@ -418,6 +506,9 @@
           if (data.onlineUsers) renderOnlineUsers(data.onlineUsers);
         }
         if (data.type === 'userUpdate') renderOnlineUsers(data.onlineUsers || []);
+        if (data.type === 'catalogoAtualizado') {
+          document.getElementById('catalogoTotal').textContent = data.total;
+        }
       };
       ws.onclose = () => {
         document.getElementById('connectionStatus').textContent = '● Offline';
@@ -468,6 +559,9 @@
       renderPecas();
     }
 
+    // ============================================
+    // MODAL PEDIR PEÇA
+    // ============================================
     function openAddModal() {
       document.getElementById('addModal').classList.remove('hidden');
       document.getElementById('codigoInput').value = '';
@@ -475,7 +569,7 @@
       document.getElementById('quantidadeInput').value = '';
       document.getElementById('obsInput').value = '';
       document.getElementById('infoEncontrada').style.display = 'none';
-      document.getElementById('erroBusca').style.display = 'none';
+      document.getElementById('resultadoBusca').classList.add('hidden');
       currentInfoPeca = null;
     }
 
@@ -487,39 +581,42 @@
 
       const btn = document.getElementById('buscarBtn');
       btn.disabled = true; btn.textContent = '⏳ Buscando...';
-      document.getElementById('erroBusca').style.display = 'none';
+      
+      const resultado = document.getElementById('resultadoBusca');
+      resultado.classList.add('hidden');
       document.getElementById('infoEncontrada').style.display = 'none';
 
       try {
         const res = await fetch(`${SERVER_URL}/buscar/${encodeURIComponent(codigo)}`);
         const info = await res.json();
 
-        if (info.naoEncontrado) {
-          document.getElementById('erroBusca').textContent = info.mensagem || 'Não encontrado - preencha manualmente';
-          document.getElementById('erroBusca').style.display = 'block';
-        } else {
+        if (info.encontrado) {
           currentInfoPeca = info;
           renderInfoEncontrada(info);
-          if (info.nome && !document.getElementById('nomeInput').value) {
+          if (info.nome) {
             document.getElementById('nomeInput').value = info.nome;
           }
+        } else {
+          resultado.className = 'resultado-busca nao-encontrado';
+          resultado.innerHTML = `⚠️ ${info.mensagem}`;
+          resultado.classList.remove('hidden');
         }
       } catch(e) {
-        document.getElementById('erroBusca').textContent = 'Erro na busca - preencha manualmente';
-        document.getElementById('erroBusca').style.display = 'block';
+        resultado.className = 'resultado-busca nao-encontrado';
+        resultado.innerHTML = '❌ Erro na busca. Preencha manualmente.';
+        resultado.classList.remove('hidden');
       }
 
-      btn.disabled = false; btn.textContent = '🔍 Buscar Informações';
+      btn.disabled = false; btn.textContent = '🔍 Buscar no Catálogo';
     }
 
     function renderInfoEncontrada(info) {
       const div = document.getElementById('infoEncontrada');
       div.innerHTML = `
-        <div class="info-header">✅ Encontrado!</div>
+        <div class="info-header">✅ Encontrado no catálogo!</div>
         ${info.tipo ? `<div class="info-row"><span class="info-label">Tipo:</span><span class="info-value">${info.tipo}</span></div>` : ''}
         ${info.marca ? `<div class="info-row"><span class="info-label">Marca:</span><span class="info-value">${info.marca}</span></div>` : ''}
         ${info.aplicacao && info.aplicacao.length > 0 ? `<div><span class="info-label">🚗 Veículos:</span><div class="veiculos-lista">${info.aplicacao.map(v => `<span class="veiculo-tag">${v}</span>`).join('')}</div></div>` : ''}
-        ${info.link ? `<a href="${info.link}" target="_blank" class="ver-ml-link">🛒 Ver no Mercado Livre</a>` : ''}
       `;
       div.style.display = 'block';
     }
@@ -539,6 +636,85 @@
       closeAddModal();
     }
 
+    // ============================================
+    // MODAL CATÁLOGO (SÓ ADMIN)
+    // ============================================
+    function openCatalogoModal() {
+      document.getElementById('catalogoModal').classList.remove('hidden');
+      document.getElementById('catCodigoInput').value = '';
+      document.getElementById('catTipoInput').value = '';
+      document.getElementById('catMarcaInput').value = '';
+      document.getElementById('catVeiculosInput').value = '';
+      document.getElementById('catalogoResultado').classList.add('hidden');
+      selectedTipo = '';
+      document.querySelectorAll('.tipo-option').forEach(el => el.classList.remove('selected'));
+      loadCatalogoStats();
+    }
+
+    function closeCatalogoModal() { document.getElementById('catalogoModal').classList.add('hidden'); }
+
+    function selectTipo(el, tipo) {
+      document.querySelectorAll('.tipo-option').forEach(e => e.classList.remove('selected'));
+      el.classList.add('selected');
+      selectedTipo = tipo;
+      document.getElementById('catTipoInput').value = '';
+    }
+
+    async function cadastrarPeca() {
+      const codigo = document.getElementById('catCodigoInput').value.trim();
+      const tipoInput = document.getElementById('catTipoInput').value.trim();
+      const tipo = tipoInput || selectedTipo;
+      const marca = document.getElementById('catMarcaInput').value.trim();
+      const veiculosText = document.getElementById('catVeiculosInput').value.trim();
+      
+      const resultado = document.getElementById('catalogoResultado');
+      
+      if (!codigo || !tipo || !marca) {
+        resultado.className = 'resultado-busca nao-encontrado';
+        resultado.innerHTML = '⚠️ Preencha código, tipo e marca!';
+        resultado.classList.remove('hidden');
+        return;
+      }
+      
+      const veiculos = veiculosText ? veiculosText.split(',').map(v => v.trim()).filter(v => v) : [];
+      
+      try {
+        const res = await fetch(`${SERVER_URL}/catalogo`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ codigo, tipo, marca, veiculos })
+        });
+        
+        const data = await res.json();
+        
+        if (data.sucesso) {
+          resultado.className = 'resultado-busca encontrado';
+          resultado.innerHTML = `✅ ${data.mensagem}<br>Total no catálogo: ${data.totalCatalogo} peças`;
+          resultado.classList.remove('hidden');
+          document.getElementById('catalogoTotal').textContent = data.totalCatalogo;
+          
+          // Limpa campos
+          document.getElementById('catCodigoInput').value = '';
+          document.getElementById('catTipoInput').value = '';
+          document.getElementById('catMarcaInput').value = '';
+          document.getElementById('catVeiculosInput').value = '';
+          selectedTipo = '';
+          document.querySelectorAll('.tipo-option').forEach(el => el.classList.remove('selected'));
+        } else {
+          resultado.className = 'resultado-busca nao-encontrado';
+          resultado.innerHTML = `⚠️ ${data.erro}`;
+          resultado.classList.remove('hidden');
+        }
+      } catch(e) {
+        resultado.className = 'resultado-busca nao-encontrado';
+        resultado.innerHTML = '❌ Erro ao cadastrar. Tente novamente.';
+        resultado.classList.remove('hidden');
+      }
+    }
+
+    // ============================================
+    // MODAL DETALHES
+    // ============================================
     function openDetailModal(id) {
       const peca = pecas.find(p => p.id === id);
       if (!peca) return;
